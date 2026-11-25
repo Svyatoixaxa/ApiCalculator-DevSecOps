@@ -33,7 +33,7 @@ jobs:
           docker build --pull --build-arg APP_VERSION="$APP_VERSION" -t "calculator-api:$APP_VERSION" .
       - name: Run and check container
         run: |
-          docker run -d --name calculator-test -p 127.0.0.1:8000:8000 "calculator-api:$APP_VERSION"
+          curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 2 http://127.0.0.1:8000/version | python -c 'import json, os, sys; data = json.load(sys.stdin); assert data["version"] == os.environ["APP_VERSION"], data; print(data)'
           trap 'docker logs calculator-test; docker rm -f calculator-test' EXIT
           curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/version | python -c 'import json, os, sys; data = json.load(sys.stdin); assert data["version"] == os.environ["APP_VERSION"], data; print(data)'
           curl --fail --silent --show-error 'http://127.0.0.1:8000/add?a=2&b=3' | python -c 'import json, sys; data = json.load(sys.stdin); assert data == {"result": 5}, data; print(data)'
@@ -71,7 +71,7 @@ jobs:
       - name: Run Semgrep (report mode)
         run: |
           mkdir -p reports
-          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.186.0 semgrep scan --config auto --metrics off --json-output reports/semgrep.json
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.186.0 semgrep scan --config p/default --metrics off --json-output reports/semgrep.json
       - name: Upload Semgrep report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
