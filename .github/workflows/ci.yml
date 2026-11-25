@@ -33,9 +33,9 @@ jobs:
           docker build --pull --build-arg APP_VERSION="$APP_VERSION" -t "calculator-api:$APP_VERSION" .
       - name: Run and check container
         run: |
-          curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 2 http://127.0.0.1:8000/version | python -c 'import json, os, sys; data = json.load(sys.stdin); assert data["version"] == os.environ["APP_VERSION"], data; print(data)'
+          docker run -d --name calculator-test -p 127.0.0.1:8000:8000 "calculator-api:$APP_VERSION"
           trap 'docker logs calculator-test; docker rm -f calculator-test' EXIT
-          curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/version | python -c 'import json, os, sys; data = json.load(sys.stdin); assert data["version"] == os.environ["APP_VERSION"], data; print(data)'
+          curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-delay 2 http://127.0.0.1:8000/version | python -c 'import json, os, sys; data = json.load(sys.stdin); assert data["version"] == os.environ["APP_VERSION"], data; print(data)'
           curl --fail --silent --show-error 'http://127.0.0.1:8000/add?a=2&b=3' | python -c 'import json, sys; data = json.load(sys.stdin); assert data == {"result": 5}, data; print(data)'
           test "$(docker exec calculator-test id -u)" = 10001
       - name: Save versioned image
